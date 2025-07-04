@@ -1,5 +1,5 @@
 Bootstrap: docker
-From: ghcr.io/donneyf/mujocjo-v2-for-global-optimization:main
+From: ghcr.io/donneyf/mujoco-v2-for-global-optimization:main
 
 %environment
     export BD_PATH=/app/

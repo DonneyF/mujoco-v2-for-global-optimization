@@ -58,6 +58,10 @@ _Note_: You can only specify one of `--x` or `--X`. Attempting to provide both w
   [-3.407524, -2.309753]
 ```
 
+## Docker
+
+Docker image is available at `ghcr.io/donneyf/mujoco-v2-for-global-optimization:main` for `linux/amd64`.
+
 ## Singularity/Apptainer
 
 Provided in the releases is a Singularity/Apptainer `.sif` file, which can be ran in the typical `apptainer run` fashion
