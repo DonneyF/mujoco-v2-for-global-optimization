@@ -4,7 +4,7 @@ FROM python:3.10-slim as build
 # Set environment variables
 ENV LANG=C.UTF-8 \
     LD_LIBRARY_PATH=/opt/mujoco210/bin:$LD_LIBRARY_PATH \
-    MUJOCO_PY_MUJOCO_PATH=/opt/mujoco210 \
+    MUJOCO_PY_MUJOCO_PATH=/opt/mujoco210
 
 WORKDIR /opt
 # Install dependencies
