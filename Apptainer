@@ -1,0 +1,14 @@
+Bootstrap: docker
+From: ghcr.io/donneyf/mujocjo-v2-for-global-optimization:main
+
+%environment
+    export BD_PATH=/app/BenchSuite
+
+%post
+    echo "Apptainer definition post-processing (all heavy lifting done by Docker base image)."
+
+%runscript
+    exec python ${BD_PATH}/main.py "$@"
+
+%startscript
+    exec python ${BD_PATH}/server.py "$@"

@@ -1,0 +1,212 @@
+# .github/workflows/main.yml
+name: Comprehensive Build and Release Workflow
+
+on:
+  push:
+    branches: ['release'] # Triggers on push to the 'release' branch
+  workflow_dispatch: # Allows manual triggering from the GitHub UI
+
+# Consolidated permissions required for all jobs in this workflow
+permissions:
+  contents: write # Required for creating releases and uploading assets (Apptainer, Dockerc)
+  id-token: write # Required for OIDC authentication with Container Registry (Docker)
+  packages: write # Required for pushing Docker images to GitHub Packages (Docker)
+  attestations: write # Required for OIDC attestation (Docker)
+
+jobs:
+  # Job 1: Build and Push Docker Image
+  build-and-push-docker-image:
+    name: Build and Push Docker Image to GHCR
+    runs-on: ubuntu-latest
+
+    # Define outputs for this job that can be consumed by other jobs
+    outputs:
+      # This output will contain the full image tag, e.g., ghcr.io/owner/repo:release
+      image_full_tag: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+
+    env:
+      REGISTRY: ghcr.io
+      IMAGE_NAME: ${{ github.repository }} # e.g., 'owner/repo-name'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      # Uses the `docker/login-action` action to log in to the Container registry using the account and password that will publish the packages. Once published, the packages are scoped to the account defined here.
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3.1.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5.5.1
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      # This step uses the `docker/build-push-action` action to build the image, based on your repository's `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages.
+      # It uses the `context` parameter to define the build's context as the set of files located in the specified path. For more information, see "[Usage](https://github.com/docker/build-push-action#usage)" in the README of the `docker/build-push-action` repository.
+      # It uses the `tags` and `labels` parameters to tag and label the image with the output from the "meta" step.
+      - name: Build and push Docker image
+        id: push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # Job 2: Build Apptainer SIF
+  build-apptainer-sif:
+    name: Build Apptainer SIF
+    runs-on: ubuntu-latest
+    needs: build-and-push-docker-image # This job needs the Docker image to be built first
+
+    outputs:
+      apptainer_version_used: 1.3.6 # Pass version used for release notes
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Apptainer
+        uses: eWaterCycle/setup-apptainer@v2
+        with:
+          apptainer-version: 1.3.6
+
+      - name: Build Apptainer SIF file from Definition
+        run: |
+          OUTPUT_SIF_NAME="mujoco-v2-apptainer.sif" # Name for the resulting SIF file
+          DEFINITION_FILE="Apptainer"              # Path to your definition file
+
+          echo "Building Apptainer SIF file '${OUTPUT_SIF_NAME}' using definition: ${DEFINITION_FILE}..."
+          
+          # The `apptainer build` command now takes the definition file as input
+          apptainer build "${OUTPUT_SIF_NAME}" "${DEFINITION_FILE}"
+          
+          echo "SIF file built successfully: ${OUTPUT_SIF_NAME}"
+          ls -lh "${OUTPUT_SIF_NAME}"
+          file "${OUTPUT_SIF_NAME}"
+
+      - name: Upload Apptainer SIF as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apptainer-sif-artifact
+          path: mujoco-v2-apptainer.sif
+          # This artifact is downloaded immediately, so retention days can be low
+          retention-days: 1
+
+  # Job 3: Build Dockerc Binary
+  build-dockerc-binary:
+    name: Build Dockerc Binary
+    runs-on: ubuntu-latest
+    needs: build-and-push-docker-image # This job needs the Docker image to be built first
+
+    outputs:
+      dockerc_version_used: v0.3.2 # Pass version used for release notes
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download dockerc binary
+        run: |
+          # Define the URL for the dockerc binary
+          DOCKERC_URL="https://github.com/NilsIrl/dockerc/releases/download/v0.3.2/dockerc_x86-64"
+          # Define the output path for the dockerc binary
+          DOCKERC_BIN_PATH="./dockerc"
+
+          echo "Downloading dockerc from ${DOCKERC_URL}..."
+          curl -L "${DOCKERC_URL}" -o "${DOCKERC_BIN_PATH}"
+          
+          echo "Making dockerc executable..."
+          chmod +x "${DOCKERC_BIN_PATH}"
+          echo "dockerc downloaded and made executable at ${DOCKERC_BIN_PATH}"
+
+      - name: Pull Docker image
+        run: |
+          IMAGE_NAME="ghcr.io/donneyf/mujoco-v2-for-global-optimization:main"
+          echo "Pulling Docker image: ${IMAGE_NAME}..."
+          docker pull "${IMAGE_NAME}"
+          echo "Image pulled successfully."
+
+      - name: Use dockerc to build binary
+        run: |
+          DOCKER_IMAGE="ghcr.io/donneyf/mujoco-v2-for-global-optimization:main"
+          OUTPUT_BINARY_NAME="mujoco-amd64" # Name for the resulting binary
+
+          echo "Building binary '${OUTPUT_BINARY_NAME}' from '${DOCKER_IMAGE}' using dockerc..."
+          ./dockerc --image docker-daemon:"${DOCKER_IMAGE}" --output "${OUTPUT_BINARY_NAME}"
+          echo "Binary built successfully: ${OUTPUT_BINARY_NAME}"
+          # Verify the binary exists and is executable
+          ls -l "${OUTPUT_BINARY_NAME}"
+          file "${OUTPUT_BINARY_NAME}"
+
+      - name: Upload Dockerc Binary as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dockerc-binary-artifact
+          path: mujoco-amd64
+          # This artifact is downloaded immediately, so retention days can be low
+          retention-days: 1
+
+  # Job 4: Create Unified GitHub Release
+  create-unified-github-release:
+    name: Create Unified GitHub Release
+    runs-on: ubuntu-latest
+    # This job needs both the Apptainer and Dockerc builds to complete
+    # and their artifacts to be available.
+    needs: [build-apptainer-sif, build-dockerc-binary]
+
+    steps:
+      - name: Download Apptainer SIF Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: apptainer-sif-artifact
+          path: . # Download directly into the current working directory
+
+      - name: Download Dockerc Binary Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dockerc-binary-artifact
+          path: . # Download directly into the current working directory
+
+      - name: Verify Downloaded Files
+        run: |
+          echo "Verifying downloaded artifacts:"
+          ls -lh mujoco-v2-apptainer.sif mujoco-amd64
+          file mujoco-v2-apptainer.sif mujoco-amd64
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        if: success() && startsWith(github.ref, 'refs/heads/main')
+        with:
+          tag_name: release-${{ github.run_number }} # Unified tag name for the combined release
+          name: Unified Build Release ${{ github.run_number }}
+          body: |
+            ## Unified Build & Release Artifacts
+
+            This release contains multiple artifacts built from the 
+            Docker image **`${{ needs.build-and-push-docker-image.outputs.image_full_tag }}`** (just built).
+
+            ### Apptainer SIF Details
+            - **File Name:** `mujoco-v2-apptainer.sif`
+            - **Built from:** `Apptainer` definition file
+            - **Apptainer Version Used:** `${{ needs.build-apptainer-sif.outputs.apptainer_version_used }}`
+
+            ### Dockerc Binary Details
+            - **File Name:** `mujoco-amd64`
+            - **Built from:** `ghcr.io/donneyf/mujoco-v2-for-global-optimization:main` Docker image
+            - **Dockerc Version Used:** `${{ needs.build-dockerc-binary.outputs.dockerc_version_used }}`
+
+            ---
+            - **Source Commit:** `${{ github.sha }}`
+            - **GitHub Actions Run ID:** `${{ github.run_id }}`
+          draft: false
+          prerelease: false
+          files: |
+            mujoco-v2-apptainer.sif
+            mujoco-amd64
