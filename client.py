@@ -6,11 +6,7 @@ HOST = "127.0.0.1"  # Localhost
 PORT = 11111       # Must match server
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        prog='BenchSuite',
-        description='Provides some benchmarks',
-        epilog='Enjoy the program!'
-    )
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "--benchmark",
         help=f"Name of the benchmark. Options: {[]}",

@@ -13,7 +13,7 @@ BENCHMARKS = {
     "cheetah": MujocoHalfCheetah,
 }
 
-class BenchSuiteServer:
+class BenchServer:
     def eval(self, benchmark: str, X: list):
         bench = BENCHMARKS[benchmark]()
         y = bench(np.array(X, dtype=np.float32))
@@ -35,5 +35,5 @@ if __name__ == '__main__':
     server = xmlrpc.server.SimpleXMLRPCServer(
         ("localhost", args.port), logRequests=False
     )
-    server.register_instance(BenchSuiteServer())
+    server.register_instance(BenchServer())
     server.serve_forever()

@@ -2,7 +2,7 @@ Bootstrap: docker
 From: ghcr.io/donneyf/mujocjo-v2-for-global-optimization:main
 
 %environment
-    export BD_PATH=/app/BenchSuite
+    export BD_PATH=/app/
 
 %post
     echo "Apptainer definition post-processing (all heavy lifting done by Docker base image)."

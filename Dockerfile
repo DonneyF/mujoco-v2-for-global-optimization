@@ -5,7 +5,6 @@ FROM python:3.10-slim as build
 ENV LANG=C.UTF-8 \
     LD_LIBRARY_PATH=/opt/mujoco210/bin:$LD_LIBRARY_PATH \
     MUJOCO_PY_MUJOCO_PATH=/opt/mujoco210 \
-    BD_PATH=/app/BenchSuite
 
 WORKDIR /opt
 # Install dependencies
@@ -33,12 +32,11 @@ RUN apt update -y && apt install --no-install-recommends -y \
     apt clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy BenchSuite from current directory to the container
-COPY . /app/BenchSuite/
-WORKDIR /app/BenchSuite
+COPY . /app/
+WORKDIR /app/
 
 # Command to run the application
-ENTRYPOINT ["python", "/app/BenchSuite/main.py"]
+ENTRYPOINT ["python", "/app/main.py"]
 
 # Default CMD to append additional arguments
 CMD []
