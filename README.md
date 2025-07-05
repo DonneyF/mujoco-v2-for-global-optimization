@@ -32,6 +32,7 @@ It is recommended to use the provided binary file (based on dockerc) or one of t
 
 ## Usage
 The program is executed via the command line. Below are the general usage instructions.
+
 ### General Command Format
 When using the binary, simply pass the options as if calling `main.py`
 
@@ -58,11 +59,19 @@ _Note_: You can only specify one of `--x` or `--X`. Attempting to provide both w
   [-3.407524, -2.309753]
 ```
 
-## Docker
+## Releases
 
-Docker image is available at `ghcr.io/donneyf/mujoco-v2-for-global-optimization:main` for `linux/amd64`.
+### Binaries
+Binaries use [dockerc](https://github.com/NilsIrl/dockerc) to turn the container into a portable executable. This should
+only be used for local testing. Some warnings produced by `dockerc` may need to be suppressed when capturing
+the output (i.e. append `2>/dev/null`).
 
-## Singularity/Apptainer
+
+### Docker
+
+Docker images is available at `ghcr.io/donneyf/mujoco-v2-for-global-optimization:main` for `linux/amd64`.
+
+### Singularity/Apptainer
 
 Provided in the releases is a Singularity/Apptainer `.sif` file, which can be ran in the typical `apptainer run` fashion
 similar to docker, or in instance mode:

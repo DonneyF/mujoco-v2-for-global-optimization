@@ -115,7 +115,7 @@ jobs:
       - name: Download dockerc binary
         run: |
           # Define the URL for the dockerc binary
-          DOCKERC_URL="https://github.com/NilsIrl/dockerc/releases/download/v0.3.2/dockerc_x86-64"
+          DOCKERC_URL="https://github.com/NilsIrl/dockerc/releases/download/v0.3.2/dockerc_x86-64-gnu"
           # Define the output path for the dockerc binary
           DOCKERC_BIN_PATH="./dockerc"
 
