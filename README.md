@@ -40,11 +40,11 @@ When using the binary, simply pass the options as if calling `main.py`
 python main.py --benchmark <BENCHMARK_NAME> [--x <X_VALUES>] [--X <X_ARRAY>]
 ```
 ### Parameters
-- **`--benchmark` **_(Required)_: Specify the name of the Mujoco benchmark.
+- `--benchmark`_(Required)_: Specify the name of the Mujoco benchmark.
 Options: `"swimmer"`, `"humanoid"`, `"ant"`, `"hopper"`, `"walker"`, `"cheetah"`.
-- **`--x` **_(Optional)_: Provide space-separated numeric values as input (single point).
+- `--x` _(Optional)_: Provide space-separated numeric values as input (single point).
 Example: `--x 1.0 2.0 3.0`
-- **`--X` **_(Optional)_: Provide a NumPy array as a string representation (multi-dimensional input).
+- `--X` _(Optional)_: Provide a NumPy array as a string representation (multi-dimensional input).
 Example: `--X "[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]]"`
 
 _Note_: You can only specify one of `--x` or `--X`. Attempting to provide both will result in an error.
