@@ -62,9 +62,9 @@ _Note_: You can only specify one of `--x` or `--X`. Attempting to provide both w
 ## Releases
 
 ### Binaries
-Binaries use [dockerc](https://github.com/NilsIrl/dockerc) to turn the container into a portable executable. This should
-only be used for local testing. Some warnings produced by `dockerc` may need to be suppressed when capturing
-the output (i.e. append `2>/dev/null`).
+Binaries use [dockerc](https://github.com/NilsIrl/dockerc) to turn the container into a portable executable. Some
+additional permissions such as fuse is required. This should only be used for local testing. Some warnings
+produced by `dockerc` may need to be suppressed when capturing the output (i.e. append `2>/dev/null`).
 
 
 ### Docker
